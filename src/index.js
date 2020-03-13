@@ -9,7 +9,7 @@ app.use(bodyParser.urlencoded({
     extended: false
 }));
 
-require('./controllers/index')(app);
+require('./app/controllers/index')(app);
 
 
 app.listen(PORT, () => {

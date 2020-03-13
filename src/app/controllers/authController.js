@@ -1,17 +1,18 @@
 const express = require("express");
-const User = require("../../models/User");
+const User = require("../models/User");
 const bcrypt = require("bcryptjs");
-
+const crypto = require("crypto");
 const jwt = require("jsonwebtoken");
+const mailer = require("../../modules/mailer")
 
-const authConfig = require('../../config/auth');
+const authConfig = require("../../config/auth");
 
 const router = express.Router();
 
 function generateToken(params = {}) {
   return jwt.sign(params, authConfig.secret, {
-    expiresIn: 86400,
-  })
+    expiresIn: 86400
+  });
 }
 
 router.post("/register", async (req, res) => {
@@ -34,7 +35,7 @@ router.post("/register", async (req, res) => {
       user,
       token: generateToken({
         id: user.id
-      }),
+      })
     });
   } catch (err) {
     return res.status(400).send({
@@ -65,13 +66,67 @@ router.post("/authenticate", async (req, res) => {
   }
   user.password = undefined;
 
-
   res.send({
     user,
     token: generateToken({
       id: user.id
     })
   });
+});
+
+router.post("/forgot_password", async (req, res) => {
+  const {
+    email
+  } = req.body;
+
+  try {
+    const user = await User.findOne({
+      email
+    });
+
+    if (!user) {
+      return res.status(400).send({
+        error: "User not found"
+      });
+    }
+
+    const token = crypto.randomBytes(20).toString('hex');
+
+    const now = new Date();
+    now.setHours(now.getHours() + 1);
+
+    await User.findByIdAndUpdate(user.id, {
+      '$set': {
+        passwordResetToken: token,
+        passwordResetExpires: now,
+      }
+    }, {
+      new: true,
+      useFindAndModify: false
+    });
+    mailer.sendMail({
+      to: email,
+      from: 'gabriel@rocour.com',
+      template: 'auth/forgot_password',
+      context: {
+        token
+      },
+    }, (err) => {
+      if (err) {
+        console.log(err)
+        return res.status(400).send({
+          error: 'Cannot send forgot password email'
+        });
+      }
+
+      return res.send();
+    })
+  } catch (error) {
+    console.log(error)
+    res.status(400).send({
+      error: "Erro on forgot password, try again"
+    });
+  }
 });
 
 module.exports = app => app.use("/auth", router);
