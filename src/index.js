@@ -10,6 +10,8 @@ app.use(bodyParser.urlencoded({
 }));
 
 require('./controllers/authController')(app);
+require('./controllers/projectController')(app);
+
 
 app.listen(PORT, () => {
     console.log(`Servidor sendo executado na PORT: ${PORT}`)
