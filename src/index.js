@@ -9,6 +9,8 @@ app.use(bodyParser.urlencoded({
     extended: false
 }));
 
+require('./controllers/authController')(app);
+
 app.listen(PORT, () => {
     console.log(`Servidor sendo executado na PORT: ${PORT}`)
 });
