@@ -8,6 +8,12 @@ const authConfig = require('../config/auth');
 
 const router = express.Router();
 
+function generateToken(params = {}) {
+  return jwt.sign(params, authConfig.secret, {
+    expiresIn: 86400,
+  })
+}
+
 router.post("/register", async (req, res) => {
   try {
     if (
@@ -25,7 +31,10 @@ router.post("/register", async (req, res) => {
     user.password = undefined;
 
     return res.send({
-      user
+      user,
+      token: generateToken({
+        id: user.id
+      }),
     });
   } catch (err) {
     return res.status(400).send({
@@ -56,15 +65,12 @@ router.post("/authenticate", async (req, res) => {
   }
   user.password = undefined;
 
-  const token = jwt.sign({
-    id: user.id
-  }, authConfig.secret,{
-    expiresIn: 86400,
-  });
 
   res.send({
     user,
-    token
+    token: generateToken({
+      id: user.id
+    })
   });
 });
 
